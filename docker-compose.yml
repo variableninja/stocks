@@ -44,9 +44,10 @@ services:
       PORT: ${PORT}
     ports:
       - "${PORT:-8080}:8080"
-    networks:
-      - stocks_net
+    networks: [moy_net, edge]
 
 networks:
   stocks_net:
     driver: bridge
+  edge:
+    external: true
