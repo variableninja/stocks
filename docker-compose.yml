@@ -44,7 +44,7 @@ services:
       PORT: ${PORT}
     ports:
       - "${PORT:-8080}:8080"
-    networks: [moy_net, edge]
+    networks: [stocks_net, edge]
 
 networks:
   stocks_net:
