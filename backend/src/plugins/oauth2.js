@@ -16,6 +16,16 @@ module.exports = fp(async function oauth2Plugin(fastify) {
       auth: fastifyOauth2.GOOGLE_CONFIGURATION
     },
     startRedirectPath: '/api/auth/google',
-    callbackUri: env.GOOGLE_REDIRECT_URI
+    callbackUri: env.GOOGLE_REDIRECT_URI,
+    schema: {
+      tags: ['auth'],
+      summary: 'Login Google web',
+      description: 'Faz redirect imediato para o login da Google.',
+      response: {
+        302: {
+          description: 'Redirect para Google OAuth com os scopes email e profile.'
+        }
+      }
+    }
   });
 });

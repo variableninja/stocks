@@ -12,12 +12,21 @@ module.exports = fp(async function swaggerPlugin(fastify) {
       servers: [
         { url: 'https://stocks.madeofyoutickets.com/api' },
         { url: 'http://localhost:8080/api' }
-      ]
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT'
+          }
+        }
+      }
     }
   });
 
   fastify.register(swaggerUi, {
-    routePrefix: '/docs',
+    routePrefix: '/api/docs',
     uiConfig: { docExpansion: 'list', deepLinking: false }
   });
 });
