@@ -42,8 +42,6 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       PORT: ${PORT}
-    ports:
-      - "${PORT:-8080}:8080"
     networks: [stocks_net, edge]
 
 networks:
