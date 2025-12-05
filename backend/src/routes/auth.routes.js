@@ -51,8 +51,16 @@ async function authRoutes(fastify) {
     authController.googleMobileLogin(fastify)
   );
 
-  // web: callback Google OAuth2
-  fastify.get('/google/callback', authController.googleWebCallback(fastify));
+  // web: callback Google OAuth2 
+  fastify.get(
+    '/google/callback',
+    {
+      schema: {
+        hide: true
+      }
+    },
+    authController.googleWebCallback(fastify)
+  );
 
   // teste auth via JWT
   fastify.get(
