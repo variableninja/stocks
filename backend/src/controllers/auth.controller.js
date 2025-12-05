@@ -35,11 +35,15 @@ function googleMobileLogin(fastify) {
 function googleWebCallback(fastify) {
     return async function handler(request, reply) {
         try {
-            const token = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
+            const { token: oauthToken } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
                 request
             );
 
-            const profile = await fetchGoogleUserInfo(token.access_token);
+            if (!oauthToken?.access_token) {
+                throw new Error('GOOGLE_OAUTH_NO_ACCESS_TOKEN');
+            }
+
+            const profile = await fetchGoogleUserInfo(oauthToken.access_token);
             const user = await userService.upsertGoogleUser(fastify, profile);
 
             const jwt = fastify.jwt.sign({
