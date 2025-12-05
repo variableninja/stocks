@@ -25,7 +25,7 @@ async function authRoutes(fastify) {
       schema: {
         tags: ['auth'],
         summary: 'Login Google mobile',
-        description: 'Endpoint para login via Google no app mobile, recebe o idToken do SDK do Google e devolve um JWT da API.',
+        description: 'Endpoint para login via Google no app mobile, recebe o idToken do SDK do Google e devolve um JWT.',
         body: {
           type: 'object',
           required: ['idToken'],
@@ -62,7 +62,7 @@ async function authRoutes(fastify) {
       schema: {
         tags: ['auth'],
         summary: 'Perfil do utilizador atual',
-        description: 'Devolve os dados do utilizador associado ao JWT usado na chamada.',
+        description: 'Devolve os dados do utilizador associado ao JWT usados no request.',
         security: [{ bearerAuth: [] }],
         response: {
           200: userResponseSchema,
