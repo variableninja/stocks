@@ -52,23 +52,7 @@ async function authRoutes(fastify) {
   );
 
   // web: callback Google OAuth2
-  fastify.get('/google/callback', {
-    schema: {
-      tags: ['auth'],
-      summary: 'Callback Google OAuth2',
-      description: 'Endpoint para callback do fluxo OAuth2 do Google para a versão web.',
-      response: {
-        302: {
-          description: 'Redirect para o web app com o JWT na query string.'
-        },
-        401: {
-          description: 'Erro no callback OAuth2 do Google.',
-          type: 'object',
-          properties: { error: { type: 'string' } }
-        }
-      }
-    }
-  }, authController.googleWebCallback(fastify));
+  fastify.get('/google/callback', authController.googleWebCallback(fastify));
 
   // teste auth via JWT
   fastify.get(
