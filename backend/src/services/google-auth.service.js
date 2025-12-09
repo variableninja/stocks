@@ -1,9 +1,21 @@
 const { OAuth2Client } = require('google-auth-library');
-const fetch = require('node-fetch');
+const passport = require('passport');
+const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { loadEnv } = require('../config/env');
 
 const env = loadEnv();
 const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+
+const googleProfileStrategy = new GoogleStrategy(
+    {
+        clientID: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackURL: env.GOOGLE_REDIRECT_URI
+    },
+    (_, __, profile, done) => done(null, profile)
+);
+
+passport.use('google-profile-fetch', googleProfileStrategy);
 
 // mobile: verifica idToken do Google (React Native)
 async function verifyGoogleIdToken(idToken) {
@@ -21,28 +33,26 @@ async function verifyGoogleIdToken(idToken) {
     };
 }
 
-// web: obtém userinfo usando access_token (OAuth2)
+// web: obtém userinfo usando passport
 async function fetchGoogleUserInfo(accessToken) {
-    const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
+    return new Promise((resolve, reject) => {
+        googleProfileStrategy.userProfile(accessToken, (err, profile) => {
+            if (err) {
+                return reject(new Error(`Failed to fetch Google user info via passport - ${err.message}`));
+            }
+
+            if (!profile?.id) {
+                return reject(new Error('GOOGLE_PROFILE_EMPTY'));
+            }
+
+            resolve({
+                googleSub: profile.id,
+                email: profile.emails?.[0]?.value,
+                name: profile.displayName,
+                picture: profile.photos?.[0]?.value
+            });
+        });
     });
-
-    if (!res.ok) {
-        const body = await res.text();
-        throw new Error(
-            `Failed to fetch Google user info: ${res.status} ${res.statusText} – ${body}`
-        );
-    }
-
-    const payload = await res.json();
-    return {
-        googleSub: payload.sub,
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-    };
 }
 
 module.exports = { verifyGoogleIdToken, fetchGoogleUserInfo };
