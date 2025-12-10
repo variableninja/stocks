@@ -1,18 +1,27 @@
-async function upsertGoogleUser(fastify, profile) {
+const USER_NOT_PROVISIONED_ERROR = 'USER_NOT_PROVISIONED';
+
+async function syncExistingGoogleUser(fastify, profile) {
   const client = await fastify.pg.pool.connect();
   try {
     const { rows } = await client.query(
       `
-      INSERT INTO users (google_sub, email, name, picture)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (google_sub)
-      DO UPDATE SET email = EXCLUDED.email,
-                    name = EXCLUDED.name,
-                    picture = EXCLUDED.picture
+      UPDATE users
+      SET google_sub = COALESCE(google_sub, $1),
+          email = $2,
+          name = $3,
+          picture = $4
+      WHERE google_sub = $1 OR email = $2
       RETURNING id, email, name, picture, role
       `,
       [profile.googleSub, profile.email, profile.name, profile.picture]
     );
+
+    if (!rows.length) {
+      const err = new Error(USER_NOT_PROVISIONED_ERROR);
+      err.code = USER_NOT_PROVISIONED_ERROR;
+      throw err;
+    }
+
     return rows[0];
   } finally {
     client.release();
@@ -31,4 +40,4 @@ CREATE TABLE users (
 );
 */
 
-module.exports = { upsertGoogleUser };
+module.exports = { syncExistingGoogleUser, USER_NOT_PROVISIONED_ERROR };

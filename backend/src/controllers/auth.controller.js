@@ -2,7 +2,10 @@ const {
     verifyGoogleIdToken,
     fetchGoogleUserInfo
 } = require('../services/google-auth.service');
-const userService = require('../services/user.service');
+const {
+    syncExistingGoogleUser,
+    USER_NOT_PROVISIONED_ERROR
+} = require('../services/user.service');
 const { loadEnv } = require('../config/env');
 
 const env = loadEnv();
@@ -16,7 +19,7 @@ function googleMobileLogin(fastify) {
 
         try {
             const profile = await verifyGoogleIdToken(idToken);
-            const user = await userService.upsertGoogleUser(fastify, profile);
+            const user = await syncExistingGoogleUser(fastify, profile);
 
             const token = fastify.jwt.sign({
                 sub: user.id,
@@ -27,6 +30,10 @@ function googleMobileLogin(fastify) {
             reply.send({ token, user });
         } catch (err) {
             fastify.log.error(err);
+            if (err.code === USER_NOT_PROVISIONED_ERROR) {
+                return reply.code(403).send({ error: 'USER_NOT_ALLOWED' });
+            }
+
             reply.code(401).send({ error: 'INVALID_GOOGLE_TOKEN' });
         }
     };
@@ -34,6 +41,10 @@ function googleMobileLogin(fastify) {
 
 function googleWebCallback(fastify) {
     return async function handler(request, reply) {
+        if (!request.query?.code) {
+            return reply.code(400).send({ error: 'MISSING_AUTH_CODE' });
+        }
+
         try {
             const { token: oauthToken } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(
                 request
@@ -44,7 +55,7 @@ function googleWebCallback(fastify) {
             }
 
             const profile = await fetchGoogleUserInfo(oauthToken.access_token);
-            const user = await userService.upsertGoogleUser(fastify, profile);
+            const user = await syncExistingGoogleUser(fastify, profile);
 
             const jwt = fastify.jwt.sign({
                 sub: user.id,
@@ -53,13 +64,17 @@ function googleWebCallback(fastify) {
             });
 
             // redireciona para o web app com o token na query
-            const redirectUrl = `${env.WEB_APP_URL}/auth/callback?token=${encodeURIComponent(
+            const redirectUrl = `${env.WEB_APP_URL}/api/auth/google/callback?token=${encodeURIComponent(
                 jwt
             )}`;
 
             reply.redirect(redirectUrl);
         } catch (err) {
             fastify.log.error(err);
+            if (err.code === USER_NOT_PROVISIONED_ERROR) {
+                return reply.code(403).send({ error: 'USER_NOT_ALLOWED' });
+            }
+
             reply.code(401).send({ error: 'OAUTH2_CALLBACK_ERROR' });
         }
     };
